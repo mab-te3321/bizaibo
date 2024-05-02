@@ -114,7 +114,7 @@ class IntegrationsView(APIView):
         try:
                 business_id = Business.objects.get(user=user.id)
         except Business.DoesNotExist:
-                return Response({'status': 'failed', 'status_code': status.HTTP_404_NOT_FOUND, 'error_message': 'User has no business profile','data':{}}, status=status.HTTP_404_NOT_FOUND)
+                return Response({'status': 'failed', 'status_code': status.HTTP_404_NOT_FOUND, 'message': 'User has no business profile','data':{}}, status=status.HTTP_404_NOT_FOUND)
         
         try:
             # Add selected integrations
@@ -123,7 +123,7 @@ class IntegrationsView(APIView):
                     integration = Service.objects.get(pk=integration_id)
                     UserIntegration.objects.create(user=user, service=integration, status='todo', business_id=business_id.id)
                 except Service.DoesNotExist:
-                    return Response({'status': 'failed', 'status_code': status.HTTP_400_BAD_REQUEST, 'error_message': f'Integration with ID {integration_id} not found','data':{}}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({'status': 'failed', 'status_code': status.HTTP_400_BAD_REQUEST, 'message': f'Integration with ID {integration_id} not found','data':{}}, status=status.HTTP_400_BAD_REQUEST)
             # Add other integrations
             for integration_name in other_integrations:
                 integration, created = Service.objects.get_or_create(name=integration_name, type="False")
@@ -180,9 +180,9 @@ class UserIntegrationsView(APIView):
                 # Handle marking custom integrations as read (no status change)
                 pass
             else:
-               return Response({'status': 'failed', 'status_code': status.HTTP_400_BAD_REQUEST, 'error_message': 'Invalid status provided','data':{}}, status=status.HTTP_400_BAD_REQUEST)
+               return Response({'status': 'failed', 'status_code': status.HTTP_400_BAD_REQUEST, 'message': 'Invalid status provided','data':{}}, status=status.HTTP_400_BAD_REQUEST)
         except UserIntegration.DoesNotExist:
-            return Response({'status': 'failed', 'status_code': status.HTTP_404_NOT_FOUND, 'error_message': 'Integration not found','data':{}}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'status': 'failed', 'status_code': status.HTTP_404_NOT_FOUND, 'message': 'Integration not found','data':{}}, status=status.HTTP_404_NOT_FOUND)
         
     def delete(self, request, pk):
         user = request.user

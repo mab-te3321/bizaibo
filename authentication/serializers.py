@@ -22,7 +22,7 @@ class SendSignupLinkSerializer(serializers.Serializer):
         Validates the email address and checks if it already exists in the database.
         """
         if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError({"error_message": "Email already exists.", 'status_code': '400'})
+            raise serializers.ValidationError({"message": "Email already exists.", 'status_code': '400'})
         return value
 
     def create(self, validated_data):
@@ -81,7 +81,7 @@ class UserChangePasswordSerializer(serializers.Serializer):
     confirm_password = attrs.get('confirm_password')
     user = self.context.get('user')
     if password != confirm_password:
-      raise serializers.ValidationError({"error_message":"Password and Confirm Password doesn't match", "status_code": "400"})
+      raise serializers.ValidationError({"message":"Password and Confirm Password doesn't match", "status_code": "400"})
     user.set_password(password)
     user.save()
     return attrs
@@ -110,7 +110,7 @@ class SendPasswordResetEmailSerializer(serializers.Serializer):
             Util.send_email(subject, template_path, context,email)
             return attrs
         else:
-            raise serializers.ValidationError({"error_message": 'You are not a Registered User', "status_code": "400"})
+            raise serializers.ValidationError({"message": 'You are not a Registered User', "status_code": "400"})
 
 class UserPasswordResetSerializer(serializers.Serializer):
   password = serializers.CharField(max_length=255, style={'input_type':'password'}, write_only=True)
@@ -125,14 +125,14 @@ class UserPasswordResetSerializer(serializers.Serializer):
       uid = self.context.get('uid')
       token = self.context.get('token')
       if password != confirm_password:
-        raise serializers.ValidationError({"error_message":"Password and Confirm Password doesn't match", "status_code": "400"})
+        raise serializers.ValidationError({"message":"Password and Confirm Password doesn't match", "status_code": "400"})
       id = smart_str(urlsafe_base64_decode(uid))
       user = User.objects.get(id=id)
       if not PasswordResetTokenGenerator().check_token(user, token):
-        raise serializers.ValidationError({"error_message":'Token is not Valid or Expired', "status_code": "401"})
+        raise serializers.ValidationError({"message":'Token is not Valid or Expired', "status_code": "401"})
       user.set_password(password)
       user.save()
       return attrs
     except DjangoUnicodeDecodeError as identifier:
       PasswordResetTokenGenerator().check_token(user, token)
-      raise serializers.ValidationError({"error_message":'Token is not Valid or Expired', "error_code": "401"})
+      raise serializers.ValidationError({"message":'Token is not Valid or Expired', "error_code": "401"})
