@@ -1,6 +1,5 @@
 Django==4.2.3
 asgiref==3.8.1
-django==5.0.4
 sqlparse==0.5.0
 daphne==4.1.2
 django-cors-headers==4.3.1
