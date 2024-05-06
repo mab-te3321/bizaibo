@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'dashboard',
     'authentication',
+    'crud',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
