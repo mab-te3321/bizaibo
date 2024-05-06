@@ -2,6 +2,9 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.apps import apps
 from django.urls import reverse_lazy
 from . import forms
+from rest_framework import serializers
+from rest_framework import viewsets
+from django.core.exceptions import ImproperlyConfigured
 
 class GenericModelListView(ListView):
     template_name = 'generic_list.html'
@@ -60,3 +63,32 @@ class GenericModelDeleteView(DeleteView):
         context['model_name'] = self.kwargs['model_name']
         return context
 
+    """
+    A ViewSet that determines the queryset and serializer class dynamically
+    based on the 'model_name' URL keyword argument.
+    """
+
+    def get_queryset(self):
+        model_name = self.kwargs.get('model_name')
+        if model_name:
+            model = apps.get_model('crud', model_name)
+            return model.objects.all()
+        else:
+            raise ImproperlyConfigured("No model specified!")
+
+    def get_serializer_class(self):
+        model_name = self.kwargs.get('model_name')
+        if model_name:
+            class Meta:
+                model = apps.get_model('crud', model_name)
+                model = model
+                fields = '__all__'
+
+            serializer_class = type(
+                f"{model_name}Serializer",
+                (serializers.ModelSerializer,),
+                {'Meta': Meta}
+            )
+            return serializer_class
+        else:
+            raise ImproperlyConfigured("No model specified!")

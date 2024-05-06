@@ -15,24 +15,34 @@ class Client(models.Model,Utility):
     monthly_consumption_units = models.IntegerField(help_text="Monthly consumption in units")
 class SolarPanel(models.Model,Utility):
     brand = models.CharField(max_length=100)
-    type = models.CharField(max_length=50)
+    type = models.CharField(max_length=50,null=True, blank=True)
     capacity = models.CharField(max_length=50)
-    price = models.FloatField()
+    price = models.FloatField(null=True, blank=True)
 
 class Inverter(models.Model,Utility):
     brand = models.CharField(max_length=100)
     choice = models.CharField(max_length=100)
     capacity = models.CharField(max_length=50)
-    price = models.FloatField()
+    price = models.FloatField(null=True, blank=True)
 class Structure(models.Model,Utility):
-    l2 = models.CharField(max_length=100, blank=True, null=True)  # Assuming L2/L3 are types of structures
-    l3 = models.CharField(max_length=100, blank=True, null=True)
-    h_beam = models.CharField(max_length=100)
+    type = models.CharField(max_length=50,null=True, blank=True)
     brand = models.CharField(max_length=100)
-    price = models.FloatField()
+    price = models.FloatField(null=True, blank=True)
 class Cabling(models.Model,Utility):
     brand = models.CharField(max_length=100)
+    price = models.FloatField(null=True, blank=True)
 
 class NetMetering(models.Model,Utility):
     name = models.CharField(max_length=100)
     phase_type = models.CharField(max_length=50)
+    price = models.FloatField(null=True, blank=True)
+
+# Define the Invoice model incorporating fields from other models
+class Invoice(models.Model,Utility):
+    client = models.ForeignKey(Client, on_delete=models.DO_NOTHING)
+    solar_panel = models.ForeignKey(SolarPanel, on_delete=models.DO_NOTHING)
+    inverter = models.ForeignKey(Inverter, on_delete=models.DO_NOTHING)
+    structure = models.ForeignKey(Structure, on_delete=models.DO_NOTHING)
+    cabling = models.ForeignKey(Cabling, on_delete=models.DO_NOTHING)
+    net_metering = models.ForeignKey(NetMetering, on_delete=models.DO_NOTHING)
+    

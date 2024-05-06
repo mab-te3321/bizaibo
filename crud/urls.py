@@ -1,5 +1,6 @@
-from django.urls import path
+from django.urls import path,include
 from . import views
+from rest_framework.routers import DefaultRouter
 
 urlpatterns = [
     path('<str:model_name>/', views.GenericModelListView.as_view(), name='generic_list'),

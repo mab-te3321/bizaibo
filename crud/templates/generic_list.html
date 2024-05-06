@@ -10,7 +10,7 @@
       <tr>
         {% if field_labels %}  <!-- Check if field labels are provided -->
         {% for field_name, field_label in field_labels %}
-          <th>{{ field_label|capfirst }}</th>
+          <td>{{ item|get_attr:field_name }}</td>  <!-- Use custom filter to get attribute value by name -->
         {% endfor %}
         {% endif %}
         <th>Actions</th>
