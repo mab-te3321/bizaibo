@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-3">
+    <h2>{{ view.action|capfirst }} {{ model_name|capfirst }}</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-success">{{ view.action|capfirst }}</button>
+    </form>
+</div>
+{% endblock %}

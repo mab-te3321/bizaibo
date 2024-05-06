@@ -1,9 +1,9 @@
 from django.urls import path
-from .views import MyModelListView, MyModelCreateView, MyModelUpdateView, MyModelDeleteView
+from . import views
 
 urlpatterns = [
-    path('', MyModelListView.as_view(), name='my_model_list'),
-    path('new/', MyModelCreateView.as_view(), name='my_model_create'),
-    path('edit/<int:pk>/', MyModelUpdateView.as_view(), name='my_model_update'),
-    path('delete/<int:pk>/', MyModelDeleteView.as_view(), name='my_model_delete'),
+    path('<str:model_name>/', views.GenericModelListView.as_view(), name='generic_list'),
+    path('<str:model_name>/new/', views.GenericModelCreateView.as_view(), name='generic_create'),
+    path('<str:model_name>/edit/<int:pk>/', views.GenericModelUpdateView.as_view(), name='generic_update'),
+    path('<str:model_name>/delete/<int:pk>/', views.GenericModelDeleteView.as_view(), name='generic_delete'),
 ]
