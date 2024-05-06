@@ -10,7 +10,7 @@
   <body>
     <div class="container mt-3">
       <h2>Model List</h2>
-      <a href="{% url 'model_create' %}" class="btn btn-primary mb-2"
+      <a href="{% url 'my_model_create' %}" class="btn btn-primary mb-2"
         >Add New Model</a
       >
       <table class="table">
@@ -27,10 +27,12 @@
             <td>{{ item.name }}</td>
             <td>{{ item.description }}</td>
             <td>
-              <a href="{% url 'model_update' item.id %}" class="btn btn-info"
+              <a href="{% url 'my_model_update' item.pk %}" class="btn btn-info"
                 >Edit</a
               >
-              <a href="{% url 'model_delete' item.id %}" class="btn btn-danger"
+              <a
+                href="{% url 'my_model_delete' item.pk %}"
+                class="btn btn-danger"
                 >Delete</a
               >
             </td>

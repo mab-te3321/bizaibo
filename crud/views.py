@@ -1,35 +1,26 @@
-from django.shortcuts import render, redirect
+from django.urls import reverse_lazy
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from .models import MyModel
 from .forms import MyModelForm
 
-def model_list(request):
-    items = MyModel.objects.all()
-    return render(request, 'model_list.html', {'items': items})
+class MyModelListView(ListView):
+    model = MyModel
+    context_object_name = 'items'
+    template_name = 'my_model_list.html'
 
-def model_create(request):
-    if request.method == "POST":
-        form = MyModelForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('model_list')
-    else:
-        form = MyModelForm()
-    return render(request, 'model_form.html', {'form': form})
+class MyModelCreateView(CreateView):
+    model = MyModel
+    form_class = MyModelForm
+    success_url = reverse_lazy('my_model_list')
+    template_name = 'my_model_form.html'
 
-def model_update(request, id):
-    item = MyModel.objects.get(id=id)
-    if request.method == "POST":
-        form = MyModelForm(request.POST, instance=item)
-        if form.is_valid():
-            form.save()
-            return redirect('model_list')
-    else:
-        form = MyModelForm(instance=item)
-    return render(request, 'model_form.html', {'form': form})
+class MyModelUpdateView(UpdateView):
+    model = MyModel
+    form_class = MyModelForm
+    success_url = reverse_lazy('my_model_list')
+    template_name = 'my_model_form.html'
 
-def model_delete(request, id):
-    item = MyModel.objects.get(id=id)
-    if request.method == "POST":
-        item.delete()
-        return redirect('model_list')
-    return render(request, 'model_confirm_delete.html', {'object': item})
+class MyModelDeleteView(DeleteView):
+    model = MyModel
+    success_url = reverse_lazy('my_model_list')
+    template_name = 'my_model_confirm_delete.html'
