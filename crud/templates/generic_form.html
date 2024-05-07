@@ -4,7 +4,7 @@
   <h2>{{ view.action|capfirst }} {{ model_name|capfirst }}</h2>
   <form method="post">
     {% csrf_token %} {% crispy form %}
-    <a href="{% url 'generic_list' model_name %}" class="btn btn-info">
+    <a href="{% url 'generic_list' model_name|capfirst %}" class="btn btn-info">
     BACK
     </a>
 

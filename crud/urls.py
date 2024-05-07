@@ -3,6 +3,7 @@ from . import views
 from rest_framework.routers import DefaultRouter
 
 urlpatterns = [
+    path('new/', views.index, name='base'),
     path('<str:model_name>/', views.GenericModelListView.as_view(), name='generic_list'),
     path('<str:model_name>/new/', views.GenericModelCreateView.as_view(), name='generic_create'),
     path('<str:model_name>/edit/<int:pk>/', views.GenericModelUpdateView.as_view(), name='generic_update'),
