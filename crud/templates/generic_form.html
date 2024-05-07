@@ -1,11 +1,13 @@
-{% extends 'base.html' %}
-{% block content %}
+{% extends 'base.html' %} {% load static %} {% load crispy_forms_tags %}
+{%block content %}
 <div class="container mt-3">
-    <h2>{{ view.action|capfirst }} {{ model_name|capfirst }}</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn btn-success">{{ view.action|capfirst }}</button>
-    </form>
+  <h2>{{ view.action|capfirst }} {{ model_name|capfirst }}</h2>
+  <form method="post">
+    {% csrf_token %} {% crispy form %}
+    <a href="{% url 'generic_list' model_name %}" class="btn btn-info">
+    BACK
+    </a>
+
+  </form>
 </div>
 {% endblock %}

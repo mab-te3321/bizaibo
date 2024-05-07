@@ -35,6 +35,8 @@ INSTALLED_APPS = [
     'dashboard',
     'authentication',
     'crud',
+    'crispy_forms',
+    'crispy_bootstrap4',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
@@ -42,6 +44,8 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.facebook',
     
 ]
+# Tell django-crispy-forms to use Bootstrap 4
+CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

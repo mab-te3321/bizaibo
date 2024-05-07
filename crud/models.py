@@ -4,7 +4,10 @@ class Utility():
     @classmethod
     def get_field_labels(cls):
         # Returns a list of tuples (field name, field label)
-        return [(field.name, field.verbose_name) for field in cls._meta.fields]
+        res = [(field.name, field.verbose_name) for field in cls._meta.fields]
+        print(f"Meta Fields are {cls._meta.fields}")
+        print(f"Res is {res}")
+        return res
 
 class Client(models.Model,Utility):
     cnic = models.CharField(max_length=15, unique=True)

@@ -1,4 +1,6 @@
 from django import forms
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Submit
 from .models import *
 
 class ClientForm(forms.ModelForm):
@@ -31,9 +33,15 @@ class NetMeteringForm(forms.ModelForm):
         model = NetMetering
         fields = '__all__'
 class InvoiceForm(forms.ModelForm):
+    
+    class Meta:
+        model = Invoice
+        fields = '__all__'
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.add_input(Submit('submit', 'Submit'))
         # Get all instances for each related model
         client_choices = [(client.pk, str(client.name)) for client in Client.objects.all()]
         solar_panel_choices = [(solar_panel.pk, str(solar_panel.brand)) for solar_panel in SolarPanel.objects.all()]
@@ -49,8 +57,4 @@ class InvoiceForm(forms.ModelForm):
         self.fields['structure'].choices = structure_choices
         self.fields['cabling'].choices = cabling_choices
         self.fields['net_metering'].choices = net_metering_choices
-
-    class Meta:
-        model = Invoice
-        fields = '__all__'
-        
+  

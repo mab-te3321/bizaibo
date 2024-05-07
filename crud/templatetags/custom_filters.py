@@ -6,8 +6,18 @@ register = template.Library()
 def get_attr(obj, attr_name):
     """ Retrieve attribute by name from an object. """
     res = getattr(obj, attr_name, "")
-    print('type is --> ',type(res))
-    return res
+    if 'crud.models' in str(type(res)):
+        name = getattr(res, 'name', "")
+        brand = getattr(res, 'brand', "")
+        if name:
+            return name
+        elif brand:
+            return brand
+        else:
+            return ''
+        
+    else:
+        return res
 @register.filter
 def is_queryset(item):
     if 'object' in str(item):

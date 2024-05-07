@@ -1,0 +1,29 @@
+/* styles.css */
+select {
+    border-radius: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ced4da;
+}
+
+select:focus {
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+header {
+    background-color: rgb(53, 43, 112);
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    display: flex;
+    justify-content: space-between;
+
+}
+/* Add this in your static/css/styles.css file or in a <style> tag in the header of your base template */
+.horizontal-form .form-group,
+.horizontal-form button {
+    display: inline-block;
+    /* Align items horizontally */
+    margin-right: 10px;
+    /* Space between form elements and button */
+}
