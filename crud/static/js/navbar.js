@@ -4,6 +4,12 @@ document.addEventListener("DOMContentLoaded", function (event) {
       nav = document.getElementById(navId),
       bodypd = document.getElementById(bodyId),
       headerpd = document.getElementById(headerId);
+    $(document).ready(function () {
+      $("#datepicker").datepicker({
+        format: "dd/mm/yyyy",
+        autoclose: true,
+      });
+    });
 
     // Validate that all variables exist
     if (toggle && nav && bodypd && headerpd) {

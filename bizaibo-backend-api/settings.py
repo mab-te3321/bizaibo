@@ -31,9 +31,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
+    'rest_framework.authtoken',
     'rest_framework_simplejwt',
-    'dashboard',
     'authentication',
+    'dashboard',
     'crud',
     'crispy_forms',
     'crispy_bootstrap4',
@@ -167,11 +168,11 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = "info@bizaibo.com"
 DOMAIN = os.getenv("DOMAIN")
 SITE_NAME = "Bizaibo"
-
+ 
 
 # JWT Settings
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=20),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 
     'AUTH_HEADER_TYPES': ('Bearer',),
