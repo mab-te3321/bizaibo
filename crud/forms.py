@@ -6,37 +6,74 @@ from .models import *
 class ClientForm(forms.ModelForm):
     class Meta:
         model = Client
-        fields = '__all__'  # This will include all fields from the Client model.
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.add_input(Submit('submit', 'Submit'))
 
 class SolarPanelForm(forms.ModelForm):
     class Meta:
         model = SolarPanel
         fields = '__all__'
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.add_input(Submit('submit', 'Submit'))
+
 class InverterForm(forms.ModelForm):
     class Meta:
         model = Inverter
         fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.add_input(Submit('submit', 'Submit'))
 
 class StructureForm(forms.ModelForm):
     class Meta:
         model = Structure
         fields = '__all__'
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.add_input(Submit('submit', 'Submit'))
+
 class CablingForm(forms.ModelForm):
     class Meta:
         model = Cabling
         fields = '__all__'
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.add_input(Submit('submit', 'Submit'))
+
 class NetMeteringForm(forms.ModelForm):
     class Meta:
         model = NetMetering
         fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.add_input(Submit('submit', 'Submit'))
+
 class InvoiceForm(forms.ModelForm):
-    
     class Meta:
         model = Invoice
         fields = '__all__'
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
@@ -57,4 +94,3 @@ class InvoiceForm(forms.ModelForm):
         self.fields['structure'].choices = structure_choices
         self.fields['cabling'].choices = cabling_choices
         self.fields['net_metering'].choices = net_metering_choices
-  

@@ -13,9 +13,9 @@ class Client(models.Model,Utility):
     cnic = models.CharField(max_length=15, unique=True)
     name = models.CharField(max_length=100)
     city = models.CharField(max_length=100)
-    area = models.FloatField(help_text="Area in square meters")
+    area = models.CharField(max_length=100,help_text="You Area (i.e DHA, Gulberg, etc.)")
     contract_number = models.CharField(max_length=20)
-    monthly_consumption_units = models.IntegerField(help_text="Monthly consumption in units")
+    monthly_consumption_units = models.IntegerField(null=True,help_text="Monthly consumption in units")
 class SolarPanel(models.Model,Utility):
     brand = models.CharField(max_length=100)
     type = models.CharField(max_length=50,null=True, blank=True)
