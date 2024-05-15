@@ -1,0 +1,23 @@
+name: FTP Deploy
+
+on:
+  push:
+    branches:
+      - test_app  # Change this to your default branch if different
+
+jobs:
+  ftp-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Upload to FTP server
+      uses: SamKirkland/FTP-Deploy-Action@4.3.0
+      with:
+        ftp-server: ftp://${{ secrets.FTP_SERVER }}
+        ftp-username: ${{ secrets.FTP_USERNAME }}
+        ftp-password: ${{ secrets.FTP_PASSWORD }}
+        local-dir: ./  # Local directory to upload, adjust as necessary
+        git-ftp-args: --insecure  # If you need to allow insecure connections, remove this if unnecessary
