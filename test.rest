@@ -14,4 +14,4 @@ Content-Type: application/json
 
 GET http://127.0.0.1:8000/test_token 
 Content-Type: application/json
-Authorization: token xxx
+Authorization: token new
