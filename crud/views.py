@@ -10,26 +10,14 @@ from django.core.exceptions import ImproperlyConfigured
 from django.shortcuts import render
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 # Create your views here.
+from django.http import HttpResponse
+from crud.task import add 
+
 
 
 def index(request):
-	posts = Invoice.objects.all() # fetching all post objects from database
-	p = Paginator(posts, 1) # creating a paginator object
-	# getting the desired page number from url
-	page_number = request.GET.get('page')
-	try:
-		page_obj = p.get_page(page_number) # returns the desired page object
-	except PageNotAnInteger:
-		# if page_number is not an integer then assign the first page
-		page_obj = p.page(1)
-	except EmptyPage:
-		# if page is empty then return last page
-		page_obj = p.page(p.num_pages)
-	context = {'page_obj': page_obj}
-	# sending the page object to index.html
-	return render(request, 'index.html', context)
-
-#edited by B C SAMRUDH
+    result = add.delay(2, 3)
+    return HttpResponse('Task has been added to the queue')
 
 class GenericModelListView(ListView):
     template_name = 'generic_list.html'
@@ -46,11 +34,20 @@ class GenericModelListView(ListView):
     
     def apply_filters(self, queryset):
         search_query = self.request.GET.get('q')
+        date_range = self.request.GET.get('date_range')
         if search_query:
             query = Q()
             for field in self.get_searchable_fields():
                 query |= Q(**{f"{field}__icontains": search_query})
             queryset = queryset.filter(query)
+        if date_range:
+            try:
+                start_date, end_date = date_range.split(' to ')
+                start_date = datetime.strptime(start_date, '%Y-%m-%d')
+                end_date = datetime.strptime(end_date, '%Y-%m-%d')
+                queryset = queryset.filter(created_at__range=(start_date, end_date))
+            except ValueError:
+                pass
         return queryset
 
     def get_searchable_fields(self):
@@ -91,6 +88,11 @@ class GenericModelCreateView(CreateView):
         form_class_name = self.kwargs['model_name'] + 'Form'
         print('form class name is --> ',form_class_name)
         return getattr(forms, form_class_name)
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        if self.request.method in ('POST', 'PUT'):
+            kwargs.update({'files': self.request.FILES})
+        return kwargs
     def get_context_data(self, **kwargs):
         context = super(GenericModelCreateView, self).get_context_data(**kwargs)
         context['model_name'] = self.kwargs.get('model_name', 'InvoiceModel')
@@ -110,6 +112,11 @@ class GenericModelUpdateView(UpdateView):
     def get_form_class(self):
         form_class_name = self.kwargs['model_name'] + 'Form'
         return getattr(forms, form_class_name)
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        if self.request.method in ('POST', 'PUT'):
+            kwargs.update({'files': self.request.FILES})
+        return kwargs
     def get_context_data(self, **kwargs):
         context = super(GenericModelUpdateView, self).get_context_data(**kwargs)
         context['model_name'] = self.kwargs.get('model_name', 'InvoiceModel')

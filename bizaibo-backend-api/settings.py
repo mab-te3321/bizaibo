@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.facebook',
-    
+    'celery'
 ]
 # Tell django-crispy-forms to use Bootstrap 4
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
@@ -58,6 +58,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
      "allauth.account.middleware.AccountMiddleware",
+    'crud.processing_time.LogRequestTimeMiddleware',
 ]
 
 ROOT_URLCONF = 'bizaibo-backend-api.urls'
@@ -191,6 +192,18 @@ SIMPLE_JWT = {
 # ALLOWED_HOSTS = ['*']
 PASSWORD_RESET_TIMEOUT=900          # 900 Sec = 15 Min
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+
+# set the celery broker url 
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+  
+# set the celery result backend 
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+
+# set the celery timezone 
+CELERY_TIMEZONE = 'UTC'
 
 
 SITE_ID = 1
