@@ -196,12 +196,10 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
-# set the celery broker url 
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-  
-# set the celery result backend 
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
-
+CELERY_BROKER_URL = 'sqla+sqlite:///celerydb.sqlite'
+CELERY_RESULT_BACKEND = 'db+sqlite:///results.sqlite'
+CELERY_BEAT_SCHEDULER = 'celery_sqlalchemy_scheduler.schedulers:DatabaseScheduler'
+CELERY_BEAT_SCHEDULE_FILENAME = 'celery_schedule.db'
 # set the celery timezone 
 CELERY_TIMEZONE = 'UTC'
 

@@ -1,6 +1,7 @@
 from django.db import models
 from django.forms.models import model_to_dict
 from django.utils import timezone
+from django.urls import reverse
 from datetime import datetime
 class Utility():
     @classmethod
@@ -59,7 +60,9 @@ class Invoice(models.Model, Utility):
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='QUOTE')
     created_at = models.DateTimeField(default=datetime.now)
     updated_at = models.DateTimeField(auto_now=True)
-    file = models.FileField(upload_to='invoices/', null=True, blank=True)
+    def get_download_url(self):
+        """Return a URL for downloading the invoice."""
+        return reverse('download-invoice', kwargs={'invoice_id': self.pk})
 
     def __str__(self):
         return f"Invoice {self.id} - {self.name.name}"

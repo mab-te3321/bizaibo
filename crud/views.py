@@ -3,8 +3,10 @@ from django.apps import apps
 from django.urls import reverse_lazy
 from . import forms
 from .models import *
+from .serializers import *
 from rest_framework import serializers
 from rest_framework import viewsets
+from rest_framework.response import Response
 from django.db.models import Q
 from django.core.exceptions import ImproperlyConfigured
 from django.shortcuts import render
@@ -12,12 +14,65 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 # Create your views here.
 from django.http import HttpResponse
 from crud.task import add 
+import importlib
+from rest_framework.exceptions import NotFound
+from django.conf import settings
+from django.http import FileResponse
+import os
+from django.http import Http404
+class DynamicModelViewSet(viewsets.ModelViewSet):
+    def get_queryset(self):
+        model_name = self.kwargs['model_name']
+        try:
+            model = apps.get_model('crud', model_name)
+        except LookupError:
+            raise NotFound(f"Model '{model_name}' not found.")
+        return model.objects.all()
 
+    def get_serializer_class(self):
+        model_name = self.kwargs['model_name']
+        module_path = 'crud.serializers'
+        serializer_class_name = model_name + 'Serializer'
 
+        try:
+            serializers_module = importlib.import_module(module_path)
+            serializer_class = getattr(serializers_module, serializer_class_name)
+        except (ImportError, AttributeError):
+            raise NotFound(f"Serializer for model '{model_name}' not found.")
+        
+        return serializer_class
 
 def index(request):
-    result = add.delay(2, 3)
-    return HttpResponse('Task has been added to the queue')
+    file_path = os.path.join(settings.BASE_DIR, 'test.rest')  # Update this to the path of your file
+
+    if os.path.exists(file_path):
+        return FileResponse(open(file_path, 'rb'), as_attachment=True, filename='test.rest')  # 'as_attachment=True' makes it a download
+    else:
+        raise Http404("File not found.")
+def modify_and_send_file(request, invoice_id):
+    try:
+        invoice = Invoice.objects.get(pk=invoice_id)
+        file_path = r'edited_example.docx'
+    except Invoice.DoesNotExist:
+        raise Http404("Invoice not found.")
+
+    # Ensure the file exists
+    if not os.path.exists(file_path):
+        raise Http404("File not found.")
+
+    # Read and modify the file
+    # modified_file_path = os.path.join(settings.MEDIA_ROOT, 'temp', f'modified_{invoice.id}.pdf')
+    # with open(file_path, 'rb') as file:
+    #     content = file.read()
+    #     # Modify your content here, this is just a placeholder
+    #     modified_content = content.replace(b'Original', b'Modified')
+
+    # # Write to a temporary file
+    # with open(modified_file_path, 'wb') as temp_file:
+    #     temp_file.write(modified_content)
+
+    # Send the file
+    return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=f'modified_invoice_{invoice.id}.docx')
 
 class GenericModelListView(ListView):
     template_name = 'generic_list.html'

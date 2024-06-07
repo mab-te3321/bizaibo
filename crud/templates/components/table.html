@@ -27,6 +27,11 @@
         <button class="btn btn-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ item.pk }}" aria-expanded="false" aria-controls="collapse{{ item.pk }}">
           Details
         </button>
+        <!-- Download button -->
+        {% if item|is_invoice %}
+        <a href="{{ item.get_download_url }}" class="btn btn-success">Download</a>
+      {% endif %}
+    
       </td>
     </tr>
     <tr class="collapse" id="collapse{{ item.pk }}">

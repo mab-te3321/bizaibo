@@ -1,9 +1,5 @@
-import redis
+from sqlalchemy import create_engine, MetaData
 
-# Connect to Redis
-client = redis.Redis(host='localhost', port=6379, db=0)
-
-# Test the connection
-client.set('test', 'Hello Redis!')
-value = client.get('test')
-print(value.decode('utf-8'))
+engine = create_engine('sqlite:///celerydb.sqlite')
+metadata = MetaData(bind=engine)
+metadata.create_all()

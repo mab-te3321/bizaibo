@@ -24,3 +24,6 @@ def is_queryset(item):
         return True
     else:
         return False
+@register.filter
+def is_invoice(model_instance):
+    return model_instance.__class__.__name__ == 'Invoice'
