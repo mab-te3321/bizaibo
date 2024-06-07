@@ -20,6 +20,7 @@ from django.conf import settings
 from django.http import FileResponse
 import os
 from django.http import Http404
+from docx import Document
 class DynamicModelViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         model_name = self.kwargs['model_name']
@@ -41,7 +42,7 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
             raise NotFound(f"Serializer for model '{model_name}' not found.")
         
         return serializer_class
-
+import tempfile
 def index(request):
     file_path = os.path.join(settings.BASE_DIR, 'test.rest')  # Update this to the path of your file
 
@@ -49,30 +50,72 @@ def index(request):
         return FileResponse(open(file_path, 'rb'), as_attachment=True, filename='test.rest')  # 'as_attachment=True' makes it a download
     else:
         raise Http404("File not found.")
+
 def modify_and_send_file(request, invoice_id):
     try:
         invoice = Invoice.objects.get(pk=invoice_id)
-        file_path = r'edited_example.docx'
+        # Accessing related object's name attribute
+        client_data = [
+            {'name': 'solar_panel : '+invoice.solar_panel.name, 'quantity': invoice.solar_panel_quantity, 'price': invoice.solar_panel_price},
+            {'name': 'inverter : '+invoice.inverter.name, 'quantity': invoice.inverter_quantity, 'price': invoice.inverter_price},
+            {'name': 'structure : '+invoice.structure.name, 'quantity': invoice.structure_quantity, 'price': invoice.structure_price},
+            {'name': 'cabling :'+invoice.cabling.name, 'quantity': invoice.cabling_quantity, 'price': invoice.cabling_price},
+            {'name': 'net_metering :'+invoice.net_metering.name, 'quantity': invoice.net_metering_quantity, 'price': invoice.net_metering_price}
+            ]
+
+        print('Invoice Details:', client_data)
+        
+        file_path = os.path.join(settings.MEDIA_ROOT, 'invoices','template.docx')
     except Invoice.DoesNotExist:
         raise Http404("Invoice not found.")
+    doc = Document(file_path)
+    # Assuming the table you want to modify is the first one in the document
+    table = doc.tables[0]
+    
+    # Check if the specified row index is within the table's bounds
+    total = 0
+    # Insert new rows into the table and populate them
+    for item in client_data:
+        row = table.add_row().cells  # Add a new row to the table
+        row[0].text = str(item.get('name'))  # Assuming you want to put the data in the first cell of the new row
+        row[1].text = str(item.get('quantity'))
+        row[2].text = str(item.get('price'))
+        price = (int(item.get('quantity',0)) * float(item.get('price',0)))
+        row[3].text = str(price)
+        total += price
+    # Add a final "Total" row
+    total_row = table.add_row().cells
+    total_row[0].text = "Sub Total"
+    # Merge all cells in the "Total" row to create a single cell
+    total_row[3].text = str(total)
+    # Add a final "Total" row
+    total_row = table.add_row().cells
+    total_row[0].text = "Discount"
+    # Merge all cells in the "Total" row to create a single cell
+    total_row[3].text = str(invoice.discount)
+    # Add a final "Total" row
+    # Add a heading after the table
+    # Find the index of the table in the documen
+    # Insert a paragraph after the table for the total amount
+    total_row = table.add_row().cells
+    total_row[0].text = "Total Amount:"
+    # Merge all cells in the "Total" row to create a single cell
+    total_row[1].merge(total_row[3])
+    total_row[1].text = str(total)
 
     # Ensure the file exists
     if not os.path.exists(file_path):
         raise Http404("File not found.")
 
-    # Read and modify the file
-    # modified_file_path = os.path.join(settings.MEDIA_ROOT, 'temp', f'modified_{invoice.id}.pdf')
-    # with open(file_path, 'rb') as file:
-    #     content = file.read()
-    #     # Modify your content here, this is just a placeholder
-    #     modified_content = content.replace(b'Original', b'Modified')
+    tmp = tempfile.NamedTemporaryFile(delete=False)
+    doc.save(tmp.name)
+    tmp.close()  # Manually close the file to ensure all data is written
 
-    # # Write to a temporary file
-    # with open(modified_file_path, 'wb') as temp_file:
-    #     temp_file.write(modified_content)
-
-    # Send the file
-    return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=f'modified_invoice_{invoice.id}.docx')
+    # Re-open the file in read mode for sending
+    tmp = open(tmp.name, 'rb')
+    response = FileResponse(tmp, as_attachment=True, filename=f'modified_invoice_{invoice.id}.docx')
+    response.headers['Content-Disposition'] = f'attachment; filename="modified_invoice_{invoice.id}.docx"'
+    return response
 
 class GenericModelListView(ListView):
     template_name = 'generic_list.html'
@@ -135,14 +178,22 @@ class GenericModelListView(ListView):
         return context
 
 class GenericModelCreateView(CreateView):
-    template_name = 'generic_form.html'
+
     action = 'ADD'
+    def get_template_names(self):
+        model_name = self.kwargs.get('model_name')
+        if model_name == 'Invoice':
+            return ['invoice_form.html']  # Template name for Invoice model
+        else:
+            return ['generic_form.html']  # Template name for other models
     
+
     def get_form_class(self):
         model_name = self.kwargs['model_name']
         form_class_name = self.kwargs['model_name'] + 'Form'
         print('form class name is --> ',form_class_name)
         return getattr(forms, form_class_name)
+    
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         if self.request.method in ('POST', 'PUT'):
@@ -155,11 +206,17 @@ class GenericModelCreateView(CreateView):
         return context
     def get_success_url(self):
         return reverse_lazy('generic_list', kwargs={'model_name': self.kwargs['model_name']})
-        
 
 class GenericModelUpdateView(UpdateView):
-    template_name = 'generic_form.html'
+    
     action = 'update'
+    def get_template_names(self):
+        model_name = self.kwargs.get('model_name')
+        if model_name == 'Invoice':
+            return ['invoice_form.html']  # Template name for Invoice model
+        else:
+            return ['generic_form.html']  # Template name for other models
+
     def get_object(self, queryset=None):
         model = apps.get_model('crud', self.kwargs['model_name'])
         return model.objects.get(pk=self.kwargs['pk'])

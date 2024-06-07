@@ -2,6 +2,8 @@ from django.db import models
 from django.forms.models import model_to_dict
 from django.utils import timezone
 from django.urls import reverse
+from django.utils.timezone import now
+
 from datetime import datetime
 class Utility():
     @classmethod
@@ -48,21 +50,47 @@ class Invoice(models.Model, Utility):
     STATUS_CHOICES = [
         ('QUOTE', 'Quote'),
         ('PARTIALLY_PAID', 'Partially Paid'),
-        ('PAID', 'paid'),
+        ('PAID', 'Paid'),
     ]
     
-    name = models.ForeignKey(Client, on_delete=models.DO_NOTHING)
-    solar_panel = models.ForeignKey(SolarPanel, on_delete=models.DO_NOTHING)
-    inverter = models.ForeignKey(Inverter, on_delete=models.DO_NOTHING)
-    structure = models.ForeignKey(Structure, on_delete=models.DO_NOTHING)
-    cabling = models.ForeignKey(Cabling, on_delete=models.DO_NOTHING)
-    net_metering = models.ForeignKey(NetMetering, on_delete=models.DO_NOTHING)
+    name = models.ForeignKey('Client', on_delete=models.DO_NOTHING)
+    solar_panel = models.ForeignKey('SolarPanel', on_delete=models.DO_NOTHING)
+    solar_panel_quantity = models.IntegerField(default=1)
+    solar_panel_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    inverter = models.ForeignKey('Inverter', on_delete=models.DO_NOTHING)
+    inverter_quantity = models.IntegerField(default=1)
+    inverter_price = models.DecimalField(max_digits=10, decimal_places=2,default=0.0)
+
+    structure = models.ForeignKey('Structure', on_delete=models.DO_NOTHING)
+    structure_quantity = models.IntegerField(default=1)
+    structure_price = models.DecimalField(max_digits=10, decimal_places=2,default=0.0)
+
+    cabling = models.ForeignKey('Cabling', on_delete=models.DO_NOTHING)
+    cabling_quantity = models.IntegerField(default=1)
+    cabling_price = models.DecimalField(max_digits=10, decimal_places=2,default=0.0)
+
+    net_metering = models.ForeignKey('NetMetering', on_delete=models.DO_NOTHING)
+    net_metering_quantity = models.IntegerField(default=1)
+    net_metering_price = models.DecimalField(max_digits=10, decimal_places=2,default=0.0)
+    discount = models.DecimalField(max_digits=15, decimal_places=2, default=0.0, help_text="Enter discount.")
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='QUOTE')
-    created_at = models.DateTimeField(default=datetime.now)
+    created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
+
     def get_download_url(self):
         """Return a URL for downloading the invoice."""
         return reverse('download-invoice', kwargs={'invoice_id': self.pk})
 
     def __str__(self):
         return f"Invoice {self.id} - {self.name.name}"
+
+    def save(self, *args, **kwargs):
+        if not self.pk:  # If new instance
+            # Set default prices from related models
+            self.solar_panel_price = self.solar_panel.price
+            self.inverter_price = self.inverter.price
+            self.structure_price = self.structure.price
+            self.cabling_price = self.cabling.price
+            self.net_metering_price = self.net_metering.price
+        super().save(*args, **kwargs)
