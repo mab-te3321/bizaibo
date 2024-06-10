@@ -2,6 +2,7 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.apps import apps
 from django.urls import reverse_lazy
 from . import forms
+from .forms import ClientFormSet, InvoiceFormSet
 from .models import *
 from .serializers import *
 from rest_framework import serializers
@@ -9,7 +10,7 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from django.db.models import Q
 from django.core.exceptions import ImproperlyConfigured
-from django.shortcuts import render
+from django.shortcuts import render,redirect
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 # Create your views here.
 from django.http import HttpResponse
@@ -20,7 +21,10 @@ from django.conf import settings
 from django.http import FileResponse
 import os
 from django.http import Http404
+# imports for docx
 from docx import Document
+from docx.oxml.ns import qn
+from docx.shared import Pt, RGBColor
 class DynamicModelViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         model_name = self.kwargs['model_name']
@@ -50,73 +54,164 @@ def index(request):
         return FileResponse(open(file_path, 'rb'), as_attachment=True, filename='test.rest')  # 'as_attachment=True' makes it a download
     else:
         raise Http404("File not found.")
+def manage_items(request):
+    if request.method == 'POST':
+        formset = ClientFormSet(request.POST, queryset=Client.objects.all())
+        if formset.is_valid():
+            formset.save()
+            return redirect('success_url')  # Replace with your success URL
+    else:
+        formset = ClientFormSet(queryset=Client.objects.all())
 
+    return render(request, 'manage_clients.html', {'formset': formset})
+def manage_invoices(request):
+    if request.method == 'POST':
+        formset = InvoiceFormSet(request.POST)
+        if formset.is_valid():
+            formset.save()
+            return redirect('success_url')  # Replace with your success URL
+    else:
+        formset = InvoiceFormSet(queryset=Invoice.objects.all())
+
+    return render(request, 'manage_invoices.html', {'formset': formset})
 def modify_and_send_file(request, invoice_id):
     try:
         invoice = Invoice.objects.get(pk=invoice_id)
-        # Accessing related object's name attribute
         client_data = [
-            {'name': 'solar_panel : '+invoice.solar_panel.name, 'quantity': invoice.solar_panel_quantity, 'price': invoice.solar_panel_price},
-            {'name': 'inverter : '+invoice.inverter.name, 'quantity': invoice.inverter_quantity, 'price': invoice.inverter_price},
-            {'name': 'structure : '+invoice.structure.name, 'quantity': invoice.structure_quantity, 'price': invoice.structure_price},
-            {'name': 'cabling :'+invoice.cabling.name, 'quantity': invoice.cabling_quantity, 'price': invoice.cabling_price},
-            {'name': 'net_metering :'+invoice.net_metering.name, 'quantity': invoice.net_metering_quantity, 'price': invoice.net_metering_price}
-            ]
+            {'name': 'solar_panel : ' + invoice.solar_panel.name, 'quantity': invoice.solar_panel_quantity, 'price': invoice.solar_panel_price},
+            {'name': 'inverter : ' + invoice.inverter.name, 'quantity': invoice.inverter_quantity, 'price': invoice.inverter_price},
+            {'name': 'structure : ' + invoice.structure.name, 'quantity': invoice.structure_quantity, 'price': invoice.structure_price},
+            {'name': 'cabling : ' + invoice.cabling.name, 'quantity': invoice.cabling_quantity, 'price': invoice.cabling_price},
+            {'name': 'net_metering : ' + invoice.net_metering.name, 'quantity': invoice.net_metering_quantity, 'price': invoice.net_metering_price}
+        ]
 
         print('Invoice Details:', client_data)
-        
-        file_path = os.path.join(settings.MEDIA_ROOT, 'invoices','template.docx')
+
+        file_path = os.path.join(settings.MEDIA_ROOT, 'invoices', 'template.docx')
+        if not os.path.exists(file_path):
+            raise Http404("File not found.")
     except Invoice.DoesNotExist:
         raise Http404("Invoice not found.")
-    doc = Document(file_path)
-    # Assuming the table you want to modify is the first one in the document
-    table = doc.tables[0]
+    def handle_table0(table):
+        # Set Status
+        
+        row = table.rows[0].cells
+        cell = row[0]
+        # Set text properties
+        paragraph = cell.paragraphs[0]
+        paragraph.clear()  # Clear existing text in the paragraph
+        run = paragraph.add_run(str(invoice.status))
+        run.bold = True
+        run.font.name = 'Roboto'
+
+        # This part ensures the font name is set correctly
+        r = run._element
+        r.rPr.rFonts.set(qn('w:eastAsia'), 'Roboto')
+        
+        run.font.size = Pt(24)  # Adjust the size as needed
+        run.font.color.rgb = RGBColor(127, 127, 127)  # Dark blue color
+        # Set date
+        row = table.rows[1].cells
+        cell = row[4]
+        # Set text properties
+        paragraph = cell.paragraphs[0]
+        paragraph.clear()  # Clear existing text in the paragraph
+        run = paragraph.add_run(str(invoice.updated_at.strftime('%Y-%m-%d')))
+        run.bold = True
+        run.font.name = 'Roboto'
+
+        # This part ensures the font name is set correctly
+        r = run._element
+        r.rPr.rFonts.set(qn('w:eastAsia'), 'Roboto')
+        
+        run.font.size = Pt(12)  # Adjust the size as needed
+        run.font.color.rgb = RGBColor(0, 51, 153)  # Dark blue color
+        # set invoice No
+        row = table.rows[3].cells
+        cell = row[4]
+        # Set text properties
+        paragraph = cell.paragraphs[0]
+        paragraph.clear()  # Clear existing text in the paragraph
+        run = paragraph.add_run('#' + str(invoice.id))
+        run.bold = True
+        run.font.name = 'Roboto'
+
+        # This part ensures the font name is set correctly
+        r = run._element
+        r.rPr.rFonts.set(qn('w:eastAsia'), 'Roboto')
+        
+        run.font.size = Pt(12)  # Adjust the size as needed
+        run.font.color.rgb = RGBColor(0, 51, 153)  # Dark blue color
     
-    # Check if the specified row index is within the table's bounds
-    total = 0
-    # Insert new rows into the table and populate them
-    for item in client_data:
-        row = table.add_row().cells  # Add a new row to the table
-        row[0].text = str(item.get('name'))  # Assuming you want to put the data in the first cell of the new row
-        row[1].text = str(item.get('quantity'))
-        row[2].text = str(item.get('price'))
-        price = (int(item.get('quantity',0)) * float(item.get('price',0)))
-        row[3].text = str(price)
-        total += price
-    # Add a final "Total" row
-    total_row = table.add_row().cells
-    total_row[0].text = "Sub Total"
-    # Merge all cells in the "Total" row to create a single cell
-    total_row[3].text = str(total)
-    # Add a final "Total" row
-    total_row = table.add_row().cells
-    total_row[0].text = "Discount"
-    # Merge all cells in the "Total" row to create a single cell
-    total_row[3].text = str(invoice.discount)
-    # Add a final "Total" row
-    # Add a heading after the table
-    # Find the index of the table in the documen
-    # Insert a paragraph after the table for the total amount
-    total_row = table.add_row().cells
-    total_row[0].text = "Total Amount:"
-    # Merge all cells in the "Total" row to create a single cell
-    total_row[1].merge(total_row[3])
-    total_row[1].text = str(total)
+    def handle_table1(table):
+        row = table.rows[2].cells
+        row[0].text = "Name : "+ str(invoice.name.name)
+        
+        # Company Name
+        row = table.rows[3].cells
+        row[0].text = "Company : "+ str(invoice.name.company)
+        # Address
+        row = table.rows[4].cells
+        row[0].text = "Address : "+ str(invoice.name.city)
+        # Phone
+        row = table.rows[5].cells
+        row[0].text = "Phone : "+ str(invoice.name.contact_number)
+    
+    def handle_table2(table):
+        total = 0
+        row_index = 1  # Assuming the first row is the header row
 
-    # Ensure the file exists
-    if not os.path.exists(file_path):
-        raise Http404("File not found.")
+        for item in client_data:
+            if row_index < len(table.rows):
+                row = table.rows[row_index].cells
+                row[1].text = str(item.get('name'))
+                row[2].text = str(item.get('quantity'))
+                row[3].text = str(item.get('price'))
+                price = int(item.get('quantity', 0)) * int(item.get('price', 0))
+                row[4].text = str(price)
+                total += price
+                row_index += 1
+            else:
+                # If there are not enough rows in the table, you can decide to add new rows if necessary
+                row = table.rows[row_index].cells
+                row[1].text = str(item.get('name'))
+                row[2].text = str(item.get('quantity'))
+                row[3].text = str(item.get('price'))
+                price = int(item.get('quantity', 0)) * float(item.get('price', 0))
+                row[4].text = str(price)
+                total += price
+            # Add Subtotal
+            row = table.rows[6].cells
+            row[4].text = str(total)
+            # Add Discount
+            row = table.rows[7].cells
+            row[4].text = str(invoice.discount)
+            # Add SHIPPING
+            row = table.rows[10].cells
+            row[4].text = str(invoice.shipping_charges)
+            # Add Total
+            row = table.rows[11].cells
+            row[4].text = str(int(total) - int(invoice.discount)+int(invoice.shipping_charges))
 
+    doc = Document(file_path)
+    # Adding Client data
+    table = doc.tables[0]
+    handle_table0(table)
+    
+    # Adding Client data
+    table = doc.tables[1]
+    handle_table1(table)
+
+    table = doc.tables[2]
+    handle_table2(table)
     tmp = tempfile.NamedTemporaryFile(delete=False)
     doc.save(tmp.name)
     tmp.close()  # Manually close the file to ensure all data is written
 
-    # Re-open the file in read mode for sending
     tmp = open(tmp.name, 'rb')
     response = FileResponse(tmp, as_attachment=True, filename=f'modified_invoice_{invoice.id}.docx')
     response.headers['Content-Disposition'] = f'attachment; filename="modified_invoice_{invoice.id}.docx"'
     return response
-
 class GenericModelListView(ListView):
     template_name = 'generic_list.html'
     action = 'list'

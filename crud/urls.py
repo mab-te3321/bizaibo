@@ -1,5 +1,6 @@
 from django.urls import path,re_path
 from . import views
+from .views import manage_items, manage_invoices
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
@@ -13,7 +14,8 @@ class CustomRouter(DefaultRouter):
 router = CustomRouter()
 
 urlpatterns = [
-    
+    path('manage_clients/', manage_items, name='manage_clients'),
+    path('manage_invoices/', manage_invoices, name='manage_invoices'),
     path('new/', views.index, name='base'),
     path('invoice/<int:invoice_id>/download/',  views.modify_and_send_file, name='download-invoice'),
     path('<str:model_name>/', views.GenericModelListView.as_view(), name='generic_list'),

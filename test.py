@@ -1,33 +1,22 @@
 from docx import Document
 
-def add_price_to_table(docx_path, row_index, price):
+def find_subtotal_in_docx(docx_path, keyword="SUBTOTAL"):
     # Load the existing Word document
     doc = Document(docx_path)
     
-    # Assuming the table you want to modify is the first one in the document
-    table = doc.tables[0]
+    # Iterate over tables
+    for table_idx, table in enumerate(doc.tables):
+        # Iterate over rows in the current table
+        for row_idx, row in enumerate(table.rows):
+            # Iterate over cells in the current row
+            for idx,cell in enumerate(row.cells):
+                if keyword in cell.text:
+                    print(f"Keyword '{keyword}' found in Table {table_idx}, Row {row_idx}, cell number {idx}.")
+                    return table_idx, row_idx
     
-    # Check if the specified row index is within the table's bounds
-# Iterate over paragraphs and print index, text, and style
-    for idx, paragraph in enumerate(doc.paragraphs):
-        print(f"Paragraph {idx}:")
-        print(f"  Text: {paragraph.text}")
-        print(f"  Style: {paragraph.style.name}")
-
-    # Iterate over tables and print index, text, and style of each cell
-    for idx, table in enumerate(doc.tables):
-        print(f"Table {idx}:")
-        for row in table.rows:
-            for cell in row.cells:
-                print(f"  Cell text: {cell.text}")
-                print(f"  Cell style: {cell.paragraphs[0].style.name}")
-
-    
-    # Save the modified document
-    # doc.save(docx_path)
+    print(f"Keyword '{keyword}' not found in any table.")
+    return None, None
 
 # Usage
 docx_file_path = r'media\invoices\template.docx'
-row_to_modify = 1  # Index of the row where you want to add/modify the price
-price_to_add = 'MAB'  # Price to add
-add_price_to_table(docx_file_path, row_to_modify, price_to_add)
+find_subtotal_in_docx(docx_file_path,keyword='INVOICE NO.')

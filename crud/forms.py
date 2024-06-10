@@ -2,7 +2,7 @@ from django import forms
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit
 from .models import *
-
+from django.forms import modelformset_factory
 class ClientForm(forms.ModelForm):
     class Meta:
         model = Client
@@ -94,3 +94,6 @@ class InvoiceForm(forms.ModelForm):
         self.fields['structure'].choices = structure_choices
         self.fields['cabling'].choices = cabling_choices
         self.fields['net_metering'].choices = net_metering_choices
+
+ClientFormSet = modelformset_factory(Client, form=ClientForm, extra=1)
+InvoiceFormSet = modelformset_factory(Invoice, form=InvoiceForm, extra=0)

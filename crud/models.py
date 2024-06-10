@@ -18,8 +18,9 @@ class Client(models.Model,Utility):
     cnic = models.CharField(max_length=15, unique=True)
     name = models.CharField(max_length=100)
     city = models.CharField(max_length=100)
+    company = models.CharField(max_length=100, null=True, blank=True)
     area = models.CharField(max_length=100,help_text="You Area (i.e DHA, Gulberg, etc.)")
-    contract_number = models.CharField(max_length=20)
+    contact_number = models.CharField(max_length=20)
     monthly_consumption_units = models.IntegerField(null=True,help_text="Monthly consumption in units")
 class SolarPanel(models.Model,Utility):
     name = models.CharField(max_length=100)
@@ -74,6 +75,7 @@ class Invoice(models.Model, Utility):
     net_metering_quantity = models.IntegerField(default=1)
     net_metering_price = models.DecimalField(max_digits=10, decimal_places=2,default=0.0)
     discount = models.DecimalField(max_digits=15, decimal_places=2, default=0.0, help_text="Enter discount.")
+    shipping_charges = models.DecimalField(max_digits=15, decimal_places=2, default=0.0, help_text="Enter shipping charges.")
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='QUOTE')
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
