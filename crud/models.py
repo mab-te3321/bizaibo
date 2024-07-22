@@ -3,6 +3,7 @@ from django.forms.models import model_to_dict
 from django.utils import timezone
 from django.urls import reverse
 from django.utils.timezone import now
+from django.core.exceptions import ValidationError
 
 from datetime import datetime
 class Utility():
@@ -46,6 +47,16 @@ class NetMetering(models.Model,Utility):
     phase_type = models.CharField(max_length=50)
     price = models.FloatField(null=True, blank=True)
 
+class Batteries(models.Model,Utility):
+    name = models.CharField(max_length=100)
+    price = models.FloatField(null=True, blank=True)
+
+class LightningArrestor(models.Model,Utility):
+    name = models.CharField(max_length=100)
+    price = models.FloatField(null=True, blank=True)
+class Installation(models.Model,Utility):
+    name = models.CharField(max_length=100)
+    price = models.FloatField(null=True, blank=True)
 # Define the Invoice model incorporating fields from other models
 class Invoice(models.Model, Utility):
     STATUS_CHOICES = [
@@ -54,29 +65,44 @@ class Invoice(models.Model, Utility):
         ('PAID', 'Paid'),
     ]
     
-    name = models.ForeignKey('Client', on_delete=models.DO_NOTHING)
-    solar_panel = models.ForeignKey('SolarPanel', on_delete=models.DO_NOTHING)
-    solar_panel_quantity = models.IntegerField(default=1)
+    name = models.ForeignKey('Client', on_delete=models.DO_NOTHING, null=True, blank=True)
+    solar_panel = models.ForeignKey('SolarPanel', on_delete=models.DO_NOTHING, null=True, blank=True)
+    solar_panel_quantity = models.IntegerField(default=0)
     solar_panel_price = models.DecimalField(max_digits=10, decimal_places=2)
 
-    inverter = models.ForeignKey('Inverter', on_delete=models.DO_NOTHING)
-    inverter_quantity = models.IntegerField(default=1)
+    inverter = models.ForeignKey('Inverter', on_delete=models.DO_NOTHING, null=True, blank=True)
+    inverter_quantity = models.IntegerField(default=0)
     inverter_price = models.DecimalField(max_digits=10, decimal_places=2,default=0.0)
 
-    structure = models.ForeignKey('Structure', on_delete=models.DO_NOTHING)
-    structure_quantity = models.IntegerField(default=1)
+    structure = models.ForeignKey('Structure', on_delete=models.DO_NOTHING, null=True, blank=True)
+    structure_quantity = models.IntegerField(default=0)
     structure_price = models.DecimalField(max_digits=10, decimal_places=2,default=0.0)
 
-    cabling = models.ForeignKey('Cabling', on_delete=models.DO_NOTHING)
-    cabling_quantity = models.IntegerField(default=1)
+    cabling = models.ForeignKey('Cabling', on_delete=models.DO_NOTHING, null=True, blank=True)
+    cabling_quantity = models.IntegerField(default=0)
     cabling_price = models.DecimalField(max_digits=10, decimal_places=2,default=0.0)
 
-    net_metering = models.ForeignKey('NetMetering', on_delete=models.DO_NOTHING)
-    net_metering_quantity = models.IntegerField(default=1)
+    net_metering = models.ForeignKey('NetMetering', on_delete=models.DO_NOTHING, null=True, blank=True)
+    net_metering_quantity = models.IntegerField(default=0)
     net_metering_price = models.DecimalField(max_digits=10, decimal_places=2,default=0.0)
+    
+    battery = models.ForeignKey('Batteries', on_delete=models.DO_NOTHING, null=True, blank=True)
+    battery_quantity = models.IntegerField(default=0)
+    battery_price = models.DecimalField(max_digits=20, decimal_places=2,default=0.0)
+
+    lightning_arrestor = models.ForeignKey('LightningArrestor', on_delete=models.DO_NOTHING, null=True, blank=True)
+    lightning_arrestor_quantity = models.IntegerField(default=0)
+    lightning_arrestor_price = models.DecimalField(max_digits=20, decimal_places=2,default=0.0)
+
+    installation = models.ForeignKey('Installation', on_delete=models.DO_NOTHING, null=True, blank=True)
+    installation_quantity = models.IntegerField(default=0)
+    installation_price = models.DecimalField(max_digits=20, decimal_places=2,default=0.0)
+
     discount = models.DecimalField(max_digits=15, decimal_places=2, default=0.0, help_text="Enter discount.")
     shipping_charges = models.DecimalField(max_digits=15, decimal_places=2, default=0.0, help_text="Enter shipping charges.")
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='QUOTE')
+    amount_paid = models.DecimalField(max_digits=15, decimal_places=2, default=0.0, help_text="Enter amount paid for partially paid invoices.")
+    total = models.DecimalField(max_digits=15, decimal_places=2, default=0.0)
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -88,11 +114,7 @@ class Invoice(models.Model, Utility):
         return f"Invoice {self.id} - {self.name.name}"
 
     def save(self, *args, **kwargs):
-        if not self.pk:  # If new instance
-            # Set default prices from related models
-            self.solar_panel_price = self.solar_panel.price
-            self.inverter_price = self.inverter.price
-            self.structure_price = self.structure.price
-            self.cabling_price = self.cabling.price
-            self.net_metering_price = self.net_metering.price
+        if self.status == 'PARTIALLY_PAID' and self.amount_paid <= 0:
+            raise ValidationError("Amount paid must be provided for partially paid invoices.")
         super().save(*args, **kwargs)
+

@@ -7,16 +7,21 @@ from rest_framework.routers import DefaultRouter
 class CustomRouter(DefaultRouter):
     def get_urls(self):
         urls = super().get_urls()
-        urls.append(re_path(r'^api/(?P<model_name>[^/.]+)/$', views.DynamicModelViewSet.as_view({'get': 'list', 'post': 'create'}), name='dynamicmodel-list'))
-        urls.append(re_path(r'^api/(?P<model_name>[^/.]+)/(?P<pk>[^/.]+)/$', views.DynamicModelViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='dynamicmodel-detail'))
+        urls.append(re_path(r'^api/(?P<model_name>[^/.]+)/$',
+                             views.DynamicModelViewSet.as_view({'get': 'list', 'post': 'create'}),
+                            name='dynamicmodel-list'))
+        urls.append(re_path(r'^api/(?P<model_name>[^/.]+)/(?P<pk>[^/.]+)/$',
+                            views.DynamicModelViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}),
+                            name='dynamicmodel-detail'))
         return urls
 
 router = CustomRouter()
 
 urlpatterns = [
+    path('', views.index, name='base'),
     path('manage_clients/', manage_items, name='manage_clients'),
     path('manage_invoices/', manage_invoices, name='manage_invoices'),
-    path('new/', views.index, name='base'),
+    path('invoice/',  views.InvoiceModelListView.as_view(), name='invoice'),
     path('invoice/<int:invoice_id>/download/',  views.modify_and_send_file, name='download-invoice'),
     path('<str:model_name>/', views.GenericModelListView.as_view(), name='generic_list'),
     path('<str:model_name>/new/', views.GenericModelCreateView.as_view(), name='generic_create'),

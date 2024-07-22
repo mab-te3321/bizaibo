@@ -7,14 +7,16 @@ from .models import *
 from .serializers import *
 from rest_framework import serializers
 from rest_framework import viewsets
+from rest_framework.views import APIView
+from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q
 from django.core.exceptions import ImproperlyConfigured
 from django.shortcuts import render,redirect
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 # Create your views here.
 from django.http import HttpResponse
-from crud.task import add 
 import importlib
 from rest_framework.exceptions import NotFound
 from django.conf import settings
@@ -26,13 +28,52 @@ from docx import Document
 from docx.oxml.ns import qn
 from docx.shared import Pt, RGBColor
 class DynamicModelViewSet(viewsets.ModelViewSet):
+    def apply_filters(self, queryset):
+        search_query = self.request.GET.get('q')
+        date_range = self.request.GET.get('date_range')
+        if search_query:
+            query = Q()
+            for field in self.get_searchable_fields():
+                query |= Q(**{f"{field}__icontains": search_query})
+            queryset = queryset.filter(query)
+        if date_range:
+            try:
+                start_date, end_date = date_range.split(' to ')
+                start_date = datetime.strptime(start_date, '%Y-%m-%d')
+                end_date = datetime.strptime(end_date, '%Y-%m-%d')
+                queryset = queryset.filter(created_at__range=(start_date, end_date))
+            except ValueError:
+                pass
+        return queryset
+
+    def get_searchable_fields(self):
+        fields = []
+        for field in self.model._meta.fields:
+            if isinstance(field, (models.CharField, models.TextField)):
+                fields.append(field.name)
+            elif isinstance(field, models.ForeignKey):
+                if hasattr(field.related_model, 'name'):
+                    fields.append(f"{field.name}__name")
+                elif hasattr(field.related_model, 'brand'):
+                    fields.append(f"{field.name}__brand")
+        return fields
+
+    def apply_sort(self, queryset: models.QuerySet):
+        sort_by = self.request.GET.get('sort_by', None)
+        if sort_by:
+            if sort_by.startswith('-'):
+                sort_by = sort_by[1:]
+            else:
+                sort_by = f'-{sort_by}'
+            queryset = queryset.order_by(sort_by)
+        return queryset
     def get_queryset(self):
         model_name = self.kwargs['model_name']
-        try:
-            model = apps.get_model('crud', model_name)
-        except LookupError:
-            raise NotFound(f"Model '{model_name}' not found.")
-        return model.objects.all()
+        self.model = apps.get_model('crud', model_name)
+        queryset = self.model.objects.all()
+        queryset = self.apply_filters(queryset)
+        queryset = self.apply_sort(queryset)
+        return queryset
 
     def get_serializer_class(self):
         model_name = self.kwargs['model_name']
@@ -46,6 +87,15 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
             raise NotFound(f"Serializer for model '{model_name}' not found.")
         
         return serializer_class
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 import tempfile
 def index(request):
     file_path = os.path.join(settings.BASE_DIR, 'test.rest')  # Update this to the path of your file
@@ -54,6 +104,7 @@ def index(request):
         return FileResponse(open(file_path, 'rb'), as_attachment=True, filename='test.rest')  # 'as_attachment=True' makes it a download
     else:
         raise Http404("File not found.")
+
 def manage_items(request):
     if request.method == 'POST':
         formset = ClientFormSet(request.POST, queryset=Client.objects.all())
@@ -82,7 +133,10 @@ def modify_and_send_file(request, invoice_id):
             {'name': 'inverter : ' + invoice.inverter.name, 'quantity': invoice.inverter_quantity, 'price': invoice.inverter_price},
             {'name': 'structure : ' + invoice.structure.name, 'quantity': invoice.structure_quantity, 'price': invoice.structure_price},
             {'name': 'cabling : ' + invoice.cabling.name, 'quantity': invoice.cabling_quantity, 'price': invoice.cabling_price},
-            {'name': 'net_metering : ' + invoice.net_metering.name, 'quantity': invoice.net_metering_quantity, 'price': invoice.net_metering_price}
+            {'name': 'net_metering : ' + invoice.net_metering.name, 'quantity': invoice.net_metering_quantity, 'price': invoice.net_metering_price},
+            {'name': 'battery : ' + invoice.battery.name, 'quantity': invoice.battery_quantity, 'price': invoice.battery_price},
+            {'name': 'lightning_arrestor : ' + invoice.lightning_arrestor.name, 'quantity': invoice.lightning_arrestor_quantity, 'price': invoice.lightning_arrestor_price},
+            {'name': 'installation : ' + invoice.installation.name, 'quantity': invoice.installation_quantity, 'price': invoice.installation_price},
         ]
 
         print('Invoice Details:', client_data)
@@ -186,12 +240,18 @@ def modify_and_send_file(request, invoice_id):
             # Add Discount
             row = table.rows[7].cells
             row[4].text = str(invoice.discount)
+            # Add Discounted Amount
+            row = table.rows[8].cells
+            row[4].text = str(int(total) - int(invoice.discount))
+            # Add Partially Paid
+            row = table.rows[9].cells
+            row[4].text = str(invoice.amount_paid)
             # Add SHIPPING
             row = table.rows[10].cells
             row[4].text = str(invoice.shipping_charges)
             # Add Total
             row = table.rows[11].cells
-            row[4].text = str(int(total) - int(invoice.discount)+int(invoice.shipping_charges))
+            row[4].text = str(int(total) - int(invoice.discount)+int(invoice.shipping_charges)- int(invoice.amount_paid))
 
     doc = Document(file_path)
     # Adding Client data
@@ -216,7 +276,7 @@ class GenericModelListView(ListView):
     template_name = 'generic_list.html'
     action = 'list'
     paginate_by = 5
-    models = ['Client', 'SolarPanel', 'Inverter', 'Structure', 'Cabling', 'NetMetering', 'Invoice']
+    models = ['Client', 'SolarPanel', 'Inverter', 'Structure', 'Cabling', 'NetMetering', 'Batteries','LightningArrestor','Installation','Invoice']
     
     def get_queryset(self):
         self.model = apps.get_model('crud', self.kwargs['model_name'])
@@ -381,3 +441,78 @@ class GenericModelDeleteView(DeleteView):
             return serializer_class
         else:
             raise ImproperlyConfigured("No model specified!")
+class InvoiceModelListView(APIView):
+    def get_queryset(self, model_name):
+        self.model = apps.get_model('crud', model_name)
+        queryset = self.model.objects.all()
+        queryset = self.apply_filters(queryset)
+        queryset = self.apply_sort(queryset)
+        return queryset
+    
+    def apply_filters(self, queryset):
+        search_query = self.request.GET.get('q')
+        date_range = self.request.GET.get('date_range')
+        if search_query:
+            query = Q()
+            for field in self.get_searchable_fields():
+                query |= Q(**{f"{field}__icontains": search_query})
+            queryset = queryset.filter(query)
+        if date_range:
+            try:
+                start_date, end_date = date_range.split(' to ')
+                start_date = datetime.strptime(start_date, '%Y-%m-%d')
+                end_date = datetime.strptime(end_date, '%Y-%m-%d')
+                queryset = queryset.filter(created_at__range=(start_date, end_date))
+            except ValueError:
+                pass
+        return queryset
+
+    def get_searchable_fields(self):
+        fields = []
+        for field in self.model._meta.fields:
+            if isinstance(field, (models.CharField, models.TextField)):
+                fields.append(field.name)
+            elif isinstance(field, models.ForeignKey):
+                if hasattr(field.related_model, 'name'):
+                    fields.append(f"{field.name}__name")
+                elif hasattr(field.related_model, 'brand'):
+                    fields.append(f"{field.name}__brand")
+        return fields
+
+    def apply_sort(self, queryset):
+        sort_by = self.request.GET.get('sort_by', None)
+        if sort_by:
+            if sort_by.startswith('-'):
+                sort_by = sort_by[1:]
+            else:
+                sort_by = f'-{sort_by}'
+            queryset = queryset.order_by(sort_by)
+        return queryset
+    
+    def get_serializer_class(self, model_name):
+        module_path = 'crud.serializers'
+        serializer_class_name = model_name + 'Serializer'
+
+        try:
+            serializers_module = importlib.import_module(module_path)
+            serializer_class = getattr(serializers_module, serializer_class_name)
+        except (ImportError, AttributeError):
+            raise NotFound(f"Serializer for model '{model_name}' not found.")
+        
+        return serializer_class
+
+    def get(self, request, *args, **kwargs):
+        model_name = 'Invoice'
+        queryset = self.get_queryset(model_name)
+        serializer_class = self.get_serializer_class(model_name)
+        serializer = serializer_class(queryset, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, *args, **kwargs):
+        model_name = 'Invoice'
+        serializer_class = self.get_serializer_class(model_name)
+        serializer = serializer_class(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

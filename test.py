@@ -1,22 +1,11 @@
-from docx import Document
+# from tika import parser # pip install tika
 
-def find_subtotal_in_docx(docx_path, keyword="SUBTOTAL"):
-    # Load the existing Word document
-    doc = Document(docx_path)
-    
-    # Iterate over tables
-    for table_idx, table in enumerate(doc.tables):
-        # Iterate over rows in the current table
-        for row_idx, row in enumerate(table.rows):
-            # Iterate over cells in the current row
-            for idx,cell in enumerate(row.cells):
-                if keyword in cell.text:
-                    print(f"Keyword '{keyword}' found in Table {table_idx}, Row {row_idx}, cell number {idx}.")
-                    return table_idx, row_idx
-    
-    print(f"Keyword '{keyword}' not found in any table.")
-    return None, None
+# raw = parser.from_file(r'C:\Users\MAB\Downloads\518368 PL.pdf')
+# print(raw['content'])
+from pypdf import PdfReader
 
-# Usage
-docx_file_path = r'media\invoices\template.docx'
-find_subtotal_in_docx(docx_file_path,keyword='INVOICE NO.')
+reader = PdfReader(r'C:\Users\MAB\Downloads\518368 PL.pdf')
+text = ""
+for page in reader.pages:
+    text += page.extract_text() + "\n"
+print(text)

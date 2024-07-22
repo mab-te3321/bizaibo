@@ -43,7 +43,6 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.facebook',
-    'celery'
 ]
 # Tell django-crispy-forms to use Bootstrap 4
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
@@ -112,6 +111,8 @@ AUTHENTICATION_BACKENDS = [
 
 # JWT Configuration
 REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,  # Default page size
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     )
@@ -195,13 +196,6 @@ PASSWORD_RESET_TIMEOUT=900          # 900 Sec = 15 Min
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-
-CELERY_BROKER_URL = 'sqla+sqlite:///celerydb.sqlite'
-CELERY_RESULT_BACKEND = 'db+sqlite:///results.sqlite'
-CELERY_BEAT_SCHEDULER = 'celery_sqlalchemy_scheduler.schedulers:DatabaseScheduler'
-CELERY_BEAT_SCHEDULE_FILENAME = 'celery_schedule.db'
-# set the celery timezone 
-CELERY_TIMEZONE = 'UTC'
 
 
 SITE_ID = 1
