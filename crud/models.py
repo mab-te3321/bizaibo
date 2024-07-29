@@ -85,18 +85,18 @@ class Invoice(models.Model, Utility):
     net_metering = models.ForeignKey('NetMetering', on_delete=models.DO_NOTHING, null=True, blank=True)
     net_metering_quantity = models.IntegerField(default=0)
     net_metering_price = models.DecimalField(max_digits=10, decimal_places=2,default=0.0)
-    
+
     battery = models.ForeignKey('Batteries', on_delete=models.DO_NOTHING, null=True, blank=True)
     battery_quantity = models.IntegerField(default=0)
-    battery_price = models.DecimalField(max_digits=20, decimal_places=2,default=0.0)
+    battery_price = models.DecimalField(max_digits=10, decimal_places=2,default=0.0)
 
     lightning_arrestor = models.ForeignKey('LightningArrestor', on_delete=models.DO_NOTHING, null=True, blank=True)
     lightning_arrestor_quantity = models.IntegerField(default=0)
-    lightning_arrestor_price = models.DecimalField(max_digits=20, decimal_places=2,default=0.0)
+    lightning_arrestor_price = models.DecimalField(max_digits=10, decimal_places=2,default=0.0)
 
     installation = models.ForeignKey('Installation', on_delete=models.DO_NOTHING, null=True, blank=True)
     installation_quantity = models.IntegerField(default=0)
-    installation_price = models.DecimalField(max_digits=20, decimal_places=2,default=0.0)
+    installation_price = models.DecimalField(max_digits=10, decimal_places=2,default=0.0)
 
     discount = models.DecimalField(max_digits=15, decimal_places=2, default=0.0, help_text="Enter discount.")
     shipping_charges = models.DecimalField(max_digits=15, decimal_places=2, default=0.0, help_text="Enter shipping charges.")

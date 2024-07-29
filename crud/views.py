@@ -1,5 +1,6 @@
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.apps import apps
+from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from . import forms
 from .forms import ClientFormSet, InvoiceFormSet
@@ -127,7 +128,54 @@ def manage_invoices(request):
     return render(request, 'manage_invoices.html', {'formset': formset})
 def modify_and_send_file(request, invoice_id):
     try:
-        invoice = Invoice.objects.get(pk=invoice_id)
+        invoice = get_object_or_404(Invoice, pk=invoice_id)
+
+        # Create a function to display foreign key relationships properly
+        def get_foreign_key_display(instance, field_name):
+            fk_instance = getattr(instance, field_name)
+            return str(fk_instance) if fk_instance else 'None'
+
+        # Print the inner content of the invoice object
+        invoice_details = {
+            'ID': invoice.id,
+            'Client Name': get_foreign_key_display(invoice, 'name'),
+            'Solar Panel': get_foreign_key_display(invoice, 'solar_panel'),
+            'Solar Panel Quantity': invoice.solar_panel_quantity,
+            'Solar Panel Price': invoice.solar_panel_price,
+            'Inverter': get_foreign_key_display(invoice, 'inverter'),
+            'Inverter Quantity': invoice.inverter_quantity,
+            'Inverter Price': invoice.inverter_price,
+            'Structure': get_foreign_key_display(invoice, 'structure'),
+            'Structure Quantity': invoice.structure_quantity,
+            'Structure Price': invoice.structure_price,
+            'Cabling': get_foreign_key_display(invoice, 'cabling'),
+            'Cabling Quantity': invoice.cabling_quantity,
+            'Cabling Price': invoice.cabling_price,
+            'Net Metering': get_foreign_key_display(invoice, 'net_metering'),
+            'Net Metering Quantity': invoice.net_metering_quantity,
+            'Net Metering Price': invoice.net_metering_price,
+            'Battery': get_foreign_key_display(invoice, 'battery'),
+            'Battery Quantity': invoice.battery_quantity,
+            'Battery Price': invoice.battery_price,
+            'Lightning Arrestor': get_foreign_key_display(invoice, 'lightning_arrestor'),
+            'Lightning Arrestor Quantity': invoice.lightning_arrestor_quantity,
+            'Lightning Arrestor Price': invoice.lightning_arrestor_price,
+            'Installation': get_foreign_key_display(invoice, 'installation'),
+            'Installation Quantity': invoice.installation_quantity,
+            'Installation Price': invoice.installation_price,
+            'Discount': invoice.discount,
+            'Shipping Charges': invoice.shipping_charges,
+            'Status': invoice.status,
+            'Amount Paid': invoice.amount_paid,
+            'Total': invoice.total,
+            'Created At': invoice.created_at,
+            'Updated At': invoice.updated_at,
+        }
+
+        # Print invoice details
+        for key, value in invoice_details.items():
+            print(f"{key}: {value}")
+        print('Invoice Details:', invoice.__dict__)
         client_data = [
             {'name': 'solar_panel : ' + invoice.solar_panel.name, 'quantity': invoice.solar_panel_quantity, 'price': invoice.solar_panel_price},
             {'name': 'inverter : ' + invoice.inverter.name, 'quantity': invoice.inverter_quantity, 'price': invoice.inverter_price},
@@ -138,8 +186,7 @@ def modify_and_send_file(request, invoice_id):
             {'name': 'lightning_arrestor : ' + invoice.lightning_arrestor.name, 'quantity': invoice.lightning_arrestor_quantity, 'price': invoice.lightning_arrestor_price},
             {'name': 'installation : ' + invoice.installation.name, 'quantity': invoice.installation_quantity, 'price': invoice.installation_price},
         ]
-
-        print('Invoice Details:', client_data)
+        
 
         file_path = os.path.join(settings.MEDIA_ROOT, 'invoices', 'template.docx')
         if not os.path.exists(file_path):
@@ -441,6 +488,8 @@ class GenericModelDeleteView(DeleteView):
             return serializer_class
         else:
             raise ImproperlyConfigured("No model specified!")
+
+
 class InvoiceModelListView(APIView):
     def get_queryset(self, model_name):
         self.model = apps.get_model('crud', model_name)
@@ -482,10 +531,6 @@ class InvoiceModelListView(APIView):
     def apply_sort(self, queryset):
         sort_by = self.request.GET.get('sort_by', None)
         if sort_by:
-            if sort_by.startswith('-'):
-                sort_by = sort_by[1:]
-            else:
-                sort_by = f'-{sort_by}'
             queryset = queryset.order_by(sort_by)
         return queryset
     
@@ -501,12 +546,37 @@ class InvoiceModelListView(APIView):
         
         return serializer_class
 
+    def get_related_data(self, instance):
+        related_data = {}
+        related_fields = [
+            'name', 'solar_panel', 'inverter', 'structure', 
+            'cabling', 'net_metering', 'battery', 
+            'lightning_arrestor', 'installation'
+        ]
+        
+        for field in related_fields:
+            related_instance = getattr(instance, field)
+            if related_instance:
+                serializer_class = self.get_serializer_class(related_instance.__class__.__name__)
+                related_data[field] = serializer_class(related_instance).data
+            else:
+                related_data[field] = None
+        
+        return related_data
+
     def get(self, request, *args, **kwargs):
         model_name = 'Invoice'
         queryset = self.get_queryset(model_name)
         serializer_class = self.get_serializer_class(model_name)
         serializer = serializer_class(queryset, many=True)
-        return Response(serializer.data)
+        
+        detailed_data = []
+        for instance in queryset:
+            instance_data = serializer_class(instance).data
+            instance_data.update(self.get_related_data(instance))
+            detailed_data.append(instance_data)
+        
+        return Response(detailed_data, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
         model_name = 'Invoice'

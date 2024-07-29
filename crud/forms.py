@@ -115,20 +115,15 @@ class InvoiceForm(forms.ModelForm):
         structure_choices = [(structure.pk, str(structure.name)) for structure in Structure.objects.all()]
         cabling_choices = [(cabling.pk, str(cabling.name)) for cabling in Cabling.objects.all()]
         net_metering_choices = [(net_metering.pk, str(net_metering.name)) for net_metering in NetMetering.objects.all()]
-        battery_choices = [(battery.pk, str(battery.name)) for battery in Batteries.objects.all()]
-        lightning_arrestor_choices = [(lightning_arrestor.pk, str(lightning_arrestor.name)) for lightning_arrestor in LightningArrestor.objects.all()]
-        installation_choices = [(installation.pk, str(installation.name)) for installation in Installation.objects.all()]
-        # Update choices for each ForeignKey field
+        
+                # Update choices for each ForeignKey field
         self.fields['name'].choices = client_choices
         self.fields['solar_panel'].choices = solar_panel_choices
         self.fields['inverter'].choices = inverter_choices
         self.fields['structure'].choices = structure_choices
         self.fields['cabling'].choices = cabling_choices
         self.fields['net_metering'].choices = net_metering_choices
-        self.fields['battery'].choices = battery_choices
-        self.fields['lightning_arrestor'].choices = lightning_arrestor_choices
-        self.fields['installation'].choices = installation_choices
-
+        
 
 ClientFormSet = modelformset_factory(Client, form=ClientForm, extra=1)
 InvoiceFormSet = modelformset_factory(Invoice, form=InvoiceForm, extra=0)
