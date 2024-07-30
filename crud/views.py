@@ -182,10 +182,7 @@ def modify_and_send_file(request, invoice_id):
             {'name': 'structure : ' + invoice.structure.name, 'quantity': invoice.structure_quantity, 'price': invoice.structure_price},
             {'name': 'cabling : ' + invoice.cabling.name, 'quantity': invoice.cabling_quantity, 'price': invoice.cabling_price},
             {'name': 'net_metering : ' + invoice.net_metering.name, 'quantity': invoice.net_metering_quantity, 'price': invoice.net_metering_price},
-            {'name': 'battery : ' + invoice.battery.name, 'quantity': invoice.battery_quantity, 'price': invoice.battery_price},
-            {'name': 'lightning_arrestor : ' + invoice.lightning_arrestor.name, 'quantity': invoice.lightning_arrestor_quantity, 'price': invoice.lightning_arrestor_price},
-            {'name': 'installation : ' + invoice.installation.name, 'quantity': invoice.installation_quantity, 'price': invoice.installation_price},
-        ]
+            ]
         
 
         file_path = os.path.join(settings.MEDIA_ROOT, 'invoices', 'template.docx')
