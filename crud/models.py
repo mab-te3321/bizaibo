@@ -54,10 +54,21 @@ class Batteries(models.Model,Utility):
 class LightningArrestor(models.Model,Utility):
     name = models.CharField(max_length=100)
     price = models.FloatField(null=True, blank=True)
+
 class Installation(models.Model,Utility):
     name = models.CharField(max_length=100)
     price = models.FloatField(null=True, blank=True)
+
+class PartiallyPaid(models.Model):
+    client = models.ForeignKey('Client', on_delete=models.CASCADE)
+    invoice = models.ForeignKey('Invoice', on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    time = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"PartiallyPaid: {self.client.name} - {self.amount}"
 # Define the Invoice model incorporating fields from other models
+
 class Invoice(models.Model, Utility):
     STATUS_CHOICES = [
         ('QUOTE', 'Quote'),
@@ -114,7 +125,25 @@ class Invoice(models.Model, Utility):
         return f"Invoice {self.id} - {self.name.name}"
 
     def save(self, *args, **kwargs):
-        if self.status == 'PARTIALLY_PAID' and self.amount_paid <= 0:
-            raise ValidationError("Amount paid must be provided for partially paid invoices.")
+        if self.status == 'PARTIALLY_PAID':
+            if self.amount_paid <= 0:
+                raise ValidationError("Amount paid must be provided for partially paid invoices.")
+            
+            # Check if this is an update with an actual change in amount_paid
+            if self.pk is not None:
+                original = Invoice.objects.get(pk=self.pk)
+                if original.amount_paid != self.amount_paid:
+                    PartiallyPaid.objects.create(
+                        client=self.name,
+                        invoice=self,
+                        amount=self.amount_paid
+                    )
+            else:
+                PartiallyPaid.objects.create(
+                    client=self.name,
+                    invoice=self,
+                    amount=self.amount_paid
+                )
+
         super().save(*args, **kwargs)
 

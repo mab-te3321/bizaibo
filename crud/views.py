@@ -574,6 +574,18 @@ class InvoiceModelListView(APIView):
         for instance in queryset:
             instance_data = serializer_class(instance).data
             instance_data.update(self.get_related_data(instance))
+            # Fetch related data from PartiallyPaid table based on invoice_id
+            partial_payments = PartiallyPaid.objects.filter(invoice_id=instance.id)
+            partial_payment_data = []
+            for payment in partial_payments:
+                partial_payment_data.append({
+                    'client_id': payment.client_id,
+                    'amount': payment.amount,
+                    'time': payment.time
+                })
+            
+            # Include the partial payment data in the response
+            instance_data['partial_payments'] = partial_payment_data
             detailed_data.append(instance_data)
         
         return Response(detailed_data, status=status.HTTP_200_OK)
