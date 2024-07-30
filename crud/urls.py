@@ -22,6 +22,7 @@ urlpatterns = [
     path('manage_clients/', manage_items, name='manage_clients'),
     path('manage_invoices/', manage_invoices, name='manage_invoices'),
     path('invoice/',  views.InvoiceModelListView.as_view(), name='invoice'),
+    path('invoice/<int:invoice_id>/', views.InvoiceModelListView.as_view(), name='invoice-detail'),
     path('invoice/<int:invoice_id>/download/',  views.modify_and_send_file, name='download-invoice'),
     path('<str:model_name>/', views.GenericModelListView.as_view(), name='generic_list'),
     path('<str:model_name>/new/', views.GenericModelCreateView.as_view(), name='generic_create'),

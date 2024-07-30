@@ -491,11 +491,14 @@ class GenericModelDeleteView(DeleteView):
 
 
 class InvoiceModelListView(APIView):
-    def get_queryset(self, model_name):
+    def get_queryset(self, model_name, invoice_id=None):
         self.model = apps.get_model('crud', model_name)
-        queryset = self.model.objects.all()
-        queryset = self.apply_filters(queryset)
-        queryset = self.apply_sort(queryset)
+        if invoice_id:
+            queryset = self.model.objects.filter(id=invoice_id)
+        else:
+            queryset = self.model.objects.all()
+            queryset = self.apply_filters(queryset)
+            queryset = self.apply_sort(queryset)
         return queryset
     
     def apply_filters(self, queryset):
@@ -566,7 +569,8 @@ class InvoiceModelListView(APIView):
 
     def get(self, request, *args, **kwargs):
         model_name = 'Invoice'
-        queryset = self.get_queryset(model_name)
+        invoice_id = kwargs.get('invoice_id')  # Extract invoice_id from the URL kwargs
+        queryset = self.get_queryset(model_name, invoice_id=invoice_id)
         serializer_class = self.get_serializer_class(model_name)
         serializer = serializer_class(queryset, many=True)
         
